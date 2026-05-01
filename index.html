@@ -434,7 +434,7 @@
                     displayStartupWarning('🌐 预检连接失败: 无法访问Supabase后端，请检查网络。');
                 }
             } else {
-                console.log('[预检] 连接正常'
+                console.log('[预检] 连接正常');
                 const msgDiv = document.getElementById('message');
                 if (msgDiv && !msgDiv.innerHTML.includes('失败')) {
                     msgDiv.innerHTML = '✅ 数据库连接正常，请输入账号密码登录。';
