@@ -372,7 +372,7 @@
             toolMsgDiv.classList.remove('error-msg', 'warning-msg');
             
             // 🎯 核心功能：扣分成功后打开排版神器 HTML
-            window.open('阅读讲解单制作排版神器.html', '_blank');
+            window.open('reading_tool.html', '_blank');
             
             if (newCredits <= 0) {
                 toolMsgDiv.innerHTML += '<br>💡 积分已用完，将自动退出登录。';
@@ -434,7 +434,7 @@
                     displayStartupWarning('🌐 预检连接失败: 无法访问Supabase后端，请检查网络。');
                 }
             } else {
-                console.log('[预检] 连接正常');
+                console.log('[预检] 连接正常'
                 const msgDiv = document.getElementById('message');
                 if (msgDiv && !msgDiv.innerHTML.includes('失败')) {
                     msgDiv.innerHTML = '✅ 数据库连接正常，请输入账号密码登录。';
