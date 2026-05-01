@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>积分工具 - 专业版</title>
+    <title>积分工具 - 智能排版系统</title>
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -26,7 +26,7 @@
             border-radius: 2rem;
             box-shadow: 0 25px 45px -12px rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.05);
             width: 100%;
-            max-width: 480px;
+            max-width: 500px;
             padding: 2rem 1.8rem;
             transition: all 0.2s ease;
             border: 1px solid rgba(255,255,255,0.5);
@@ -164,63 +164,56 @@
         </div>
         <button id="loginBtn" onclick="login()">登录系统</button>
         <div id="message" class="message-area">✨ 输入账号密码，使用积分工具</div>
-        <div class="small-note">⚡ 每次使用工具消耗1积分 | 积分不足请联系管理员</div>
+        <div class="small-note">⚡ 每次使用工具消耗1积分，自动打开排版神器 | 积分不足请联系管理员</div>
     </div>
 
     <!-- 工具使用区域 -->
     <div id="toolArea" class="card" style="display:none;">
         <div class="flex-between">
-            <h2 style="margin-bottom:0;">🛠️ 工具箱</h2>
+            <h2 style="margin-bottom:0;">🛠️ 智能工具箱</h2>
             <span class="credit-badge" id="creditsLeft">0</span>
         </div>
         <p>欢迎，<strong id="displayUser"></strong>  👋</p>
         <p style="background:#f1f5f9; padding: 0.6rem; border-radius: 1rem; text-align:center;">
             💎 剩余积分：<span id="creditsLeftInner" style="font-size:1.4rem; font-weight:800; color:#0f3b5c;">0</span>
         </p>
-        <button class="tool-btn" onclick="useTool()">⚙️ 使用一次工具 (消耗1积分)</button>
+        <button class="tool-btn" onclick="useTool()">⚙️ 使用一次工具（消耗1积分）</button>
         <button class="logout-btn" onclick="logout()">🚪 退出登录</button>
-        <div id="toolMsg" class="message-area">✅ 就绪，点击按钮使用工具</div>
+        <div id="toolMsg" class="message-area">✅ 就绪，点击按钮将打开排版神器</div>
     </div>
 </div>
 
 <script>
-    // ======================== SUPABASE 配置 (请确保数据库中存在 users 表，字段: id, username, password, credits) ========================
+    // ======================== SUPABASE 配置 ========================
     const SUPABASE_URL = 'https://dmiylurcdvqlhadjwqqp.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRtaXlsdXJjZHZxbGhhZGp3cXFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2MTQ4NTksImV4cCI6MjA5MzE5MDg1OX0.7IiJhHGIK7UdgXA4_NHLRY78PC2JiSuMR_KNNqvyjm4';
     
-    // 全局客户端 & 当前用户状态
     let supabaseClient = null;
     let currentUser = null;
 
-    // ---------- 初始化 Supabase 客户端 (带错误检测) ----------
+    // ---------- 初始化 Supabase 客户端 ----------
     function initSupabaseClient() {
         try {
-            // 检查 supabase 全局对象是否加载成功
             if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
-                throw new Error('Supabase SDK 加载失败，请检查网络后刷新页面。如果问题持续，请联系管理员。');
+                throw new Error('Supabase SDK 加载失败，请刷新页面重试。');
             }
-            // 验证URL/KEY基础格式
             if (!SUPABASE_URL || !SUPABASE_KEY || SUPABASE_URL.length < 10 || SUPABASE_KEY.length < 10) {
-                throw new Error('Supabase 配置错误：URL 或 KEY 无效，请联系开发者检查配置。');
+                throw new Error('Supabase 配置错误：URL 或 KEY 无效，请联系管理员。');
             }
             const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            // 简单测试连通性（可选异步，不阻塞初始化但可加日志）
-            console.log('[Supabase] 客户端初始化成功，URL:', SUPABASE_URL);
+            console.log('[Supabase] 客户端初始化成功');
             return client;
         } catch (err) {
-            console.error('[Supabase] 致命初始化错误:', err);
-            // 将错误显示在登录消息区域 (如果登录区已渲染)
+            console.error('[Supabase] 初始化错误:', err);
             const msgDiv = document.getElementById('message');
             if (msgDiv) {
                 msgDiv.innerHTML = `💥 系统初始化失败: ${err.message}<br>请刷新页面或检查网络/Supabase服务状态。`;
                 msgDiv.classList.add('error-msg');
-                msgDiv.classList.remove('success-msg', 'warning-msg');
             }
             throw err;
         }
     }
 
-    // 安全获取客户端 (懒加载)
     function getSupabase() {
         if (!supabaseClient) {
             supabaseClient = initSupabaseClient();
@@ -228,14 +221,13 @@
         return supabaseClient;
     }
 
-    // ---------- 增强版登录函数 (完整错误捕获 + 连接失败明细) ----------
+    // ---------- 登录函数（完整错误处理）----------
     async function login() {
         const username = document.getElementById('username').value.trim();
         const password = document.getElementById('password').value;
         const messageDiv = document.getElementById('message');
         const loginBtn = document.getElementById('loginBtn');
         
-        // 基础校验
         if (!username || !password) {
             messageDiv.innerHTML = '⚠️ 请完整填写账号和密码';
             messageDiv.classList.add('warning-msg');
@@ -243,8 +235,7 @@
             return;
         }
 
-        // UI 状态: 加载锁
-        const originalBtnText = loginBtn.innerText;
+        const originalText = loginBtn.innerText;
         loginBtn.disabled = true;
         loginBtn.innerText = '⏳ 验证中...';
         messageDiv.innerHTML = '🔍 正在连接服务器，请稍候...';
@@ -252,106 +243,70 @@
         messageDiv.classList.add('warning-msg');
 
         try {
-            // 1. 获取 Supabase 客户端 (可能因配置抛出异常)
             const supabase = getSupabase();
-            
-            // 2. 执行查询 (网络/权限/表不存在等任何异常会被捕获)
             const { data, error } = await supabase
                 .from('users')
                 .select('*')
                 .eq('username', username)
                 .eq('password', password)
-                .maybeSingle();  // 使用 maybeSingle 避免空数据报错，便于区分错误类型
+                .maybeSingle();
             
-            // 处理查询异常 (error对象包含详细信息)
             if (error) {
-                console.error('[登录错误详情]', error);
-                let errorDetail = '';
-                // 解析常见 Supabase 错误类型
-                if (error.message) errorDetail = error.message;
-                if (error.code) errorDetail += ` (code: ${error.code})`;
-                
-                // 根据错误特征提供可读提示
+                console.error('[登录错误]', error);
                 let friendlyMsg = '';
-                if (error.message && error.message.includes('relation') && error.message.includes('does not exist')) {
-                    friendlyMsg = '❌ 数据库表不存在: "users" 表未创建。请先在 Supabase 中创建 users 表 (id, username, password, credits)。';
-                } else if (error.message && (error.message.includes('permission') || error.message.includes('policy'))) {
-                    friendlyMsg = '🔐 权限不足: 请检查 Supabase 行级安全策略 (RLS)，确保 anon key 可读取 users 表。';
-                } else if (error.message && error.message.includes('JWT')) {
-                    friendlyMsg = '⚠️ Supabase Key 无效或过期，请检查 SUPABASE_KEY 配置。';
-                } else if (error.message && error.message.includes('Failed to fetch')) {
-                    friendlyMsg = '🌐 网络连接失败: 无法访问 Supabase 服务器。<br>请检查网络、防火墙或 Supabase URL 是否正确。';
+                if (error.message.includes('relation') && error.message.includes('does not exist')) {
+                    friendlyMsg = '❌ 数据库表 "users" 不存在，请先在 Supabase 中创建表。';
+                } else if (error.message.includes('permission') || error.message.includes('policy')) {
+                    friendlyMsg = '🔐 权限不足：请检查 Supabase RLS 策略，确保 anon key 可读取 users 表。';
+                } else if (error.message.includes('Failed to fetch')) {
+                    friendlyMsg = '🌐 网络连接失败：无法访问 Supabase 服务器，请检查网络或防火墙。';
                 } else {
-                    friendlyMsg = `📡 数据库请求异常: ${errorDetail}`;
+                    friendlyMsg = `📡 数据库请求异常: ${error.message}`;
                 }
                 throw new Error(friendlyMsg);
             }
             
-            // 3. 若无数据 => 账号密码错误
             if (!data) {
                 messageDiv.innerHTML = '❌ 账号或密码错误，请重新输入。';
                 messageDiv.classList.add('error-msg');
                 messageDiv.classList.remove('warning-msg', 'success-msg');
                 loginBtn.disabled = false;
-                loginBtn.innerText = originalBtnText;
+                loginBtn.innerText = originalText;
                 return;
             }
             
-            // 4. 积分校验
-            if (data.credits === undefined || data.credits === null) {
-                throw new Error('用户积分字段异常，请联系管理员检查数据库 credits 字段');
-            }
-            if (data.credits <= 0) {
+            if (data.credits === undefined || data.credits <= 0) {
                 messageDiv.innerHTML = '⚠️ 您的积分已用完，请联系管理员充值后再使用。';
                 messageDiv.classList.add('error-msg');
-                messageDiv.classList.remove('warning-msg');
                 loginBtn.disabled = false;
-                loginBtn.innerText = originalBtnText;
+                loginBtn.innerText = originalText;
                 return;
             }
             
-            // 5. 登录成功
+            // 登录成功
             currentUser = data;
-            // 更新工具区UI
-            document.getElementById('displayUser').innerText = currentUser.username || username;
+            document.getElementById('displayUser').innerText = currentUser.username;
             const creditsVal = currentUser.credits;
             document.getElementById('creditsLeft').innerText = creditsVal;
             document.getElementById('creditsLeftInner').innerText = creditsVal;
-            // 显示工具区，隐藏登录区
             document.getElementById('loginArea').style.display = 'none';
             document.getElementById('toolArea').style.display = 'block';
-            // 清空消息 (工具区默认消息)
-            document.getElementById('toolMsg').innerHTML = '✅ 登录成功！点击上方按钮使用工具。';
+            document.getElementById('toolMsg').innerHTML = '✅ 登录成功！点击按钮即可使用排版神器（每次消耗1积分）。';
             document.getElementById('toolMsg').classList.add('success-msg');
             document.getElementById('toolMsg').classList.remove('error-msg', 'warning-msg');
-            // 清除登录区残留错误样式
-            messageDiv.innerHTML = '';
-            messageDiv.classList.remove('error-msg', 'warning-msg');
             
         } catch (err) {
-            console.error('[登录异常捕获]', err);
-            // 显示详细错误信息 (连接失败, 网络错误, 权限异常都显示)
-            let errorText = err.message || '未知错误，请刷新页面后重试。';
-            // 针对 "Failed to fetch" 细化提示
-            if (errorText.includes('Failed to fetch') || errorText.includes('NetworkError') || errorText.includes('network')) {
-                errorText = '🌐 无法连接至 Supabase 服务器。<br>请检查：<br>1. 当前网络是否正常。<br>2. Supabase 项目 URL 是否正确。<br>3. 是否被防火墙/CORS策略阻止。<br>详细: ' + errorText;
-            }
-            messageDiv.innerHTML = `⚠️ 登录失败: ${errorText}`;
+            messageDiv.innerHTML = `⚠️ 登录失败: ${err.message}`;
             messageDiv.classList.add('error-msg');
-            messageDiv.classList.remove('warning-msg', 'success-msg');
         } finally {
-            // 恢复按钮状态（如果没有跳转到工具区）
             if (document.getElementById('loginArea').style.display !== 'none') {
                 loginBtn.disabled = false;
-                loginBtn.innerText = originalBtnText;
-            } else {
-                // 如果登录成功进入工具区，则不需要恢复登录按钮样式（因为登录区已隐藏）
-                loginBtn.disabled = false; 
+                loginBtn.innerText = originalText;
             }
         }
     }
 
-    // ---------- 使用工具 (增强数据库连接错误处理，防无响应) ----------
+    // ---------- 使用工具（消耗积分 + 打开排版神器）----------
     async function useTool() {
         if (!currentUser) {
             logout();
@@ -359,10 +314,9 @@
         }
         
         const toolMsgDiv = document.getElementById('toolMsg');
-        const useBtn = event ? event.currentTarget : document.querySelector('.tool-btn');
-        let originalText = '';
+        const useBtn = document.querySelector('.tool-btn');
+        const originalText = useBtn ? useBtn.innerText : '';
         if (useBtn) {
-            originalText = useBtn.innerText;
             useBtn.disabled = true;
             useBtn.innerText = '⏳ 处理中...';
         }
@@ -372,32 +326,25 @@
         toolMsgDiv.classList.remove('error-msg', 'success-msg');
         
         try {
-            const supabase = getSupabase();   // 确保客户端可用
-            
-            // 1. 重新获取最新积分 (避免多端并发扣减)
+            const supabase = getSupabase();
+            // 获取最新积分
             const { data: freshUser, error: fetchError } = await supabase
                 .from('users')
-                .select('credits, id, username')
+                .select('credits, id')
                 .eq('id', currentUser.id)
                 .maybeSingle();
                 
             if (fetchError) {
-                console.error('[积分查询网络错误]', fetchError);
                 let netErrMsg = fetchError.message || '未知网络错误';
                 if (netErrMsg.includes('Failed to fetch')) {
-                    netErrMsg = '🌐 网络连接断开，无法连接Supabase，请检查网络后重试。';
+                    netErrMsg = '🌐 网络连接断开，请检查网络后重试。';
                 } else if (netErrMsg.includes('permission')) {
-                    netErrMsg = '🔒 权限验证失败，请尝试重新登录。';
+                    netErrMsg = '🔒 权限验证失败，请重新登录。';
                 }
                 throw new Error(`查询积分失败: ${netErrMsg}`);
             }
             
-            if (!freshUser) {
-                throw new Error('用户数据不存在，请重新登录。');
-            }
-            
-            // 积分不足判断
-            if (freshUser.credits <= 0) {
+            if (!freshUser || freshUser.credits <= 0) {
                 toolMsgDiv.innerHTML = '❌ 积分不足，请联系管理员充值。即将返回登录页...';
                 toolMsgDiv.classList.add('error-msg');
                 setTimeout(() => logout(), 1800);
@@ -405,7 +352,7 @@
                 return;
             }
             
-            // 2. 扣除1积分
+            // 扣除1积分
             const newCredits = freshUser.credits - 1;
             const { error: updateError } = await supabase
                 .from('users')
@@ -413,22 +360,20 @@
                 .eq('id', currentUser.id);
                 
             if (updateError) {
-                console.error('[更新积分失败]', updateError);
-                let updateMsg = updateError.message || '数据库更新失败';
-                if (updateMsg.includes('permission')) updateMsg = '无权限更新积分，请检查RLS策略。';
-                if (updateMsg.includes('Failed to fetch')) updateMsg = '网络异常，积分未扣除，请重试。';
-                throw new Error(`操作失败: ${updateMsg}`);
+                throw new Error(`操作失败: ${updateError.message}`);
             }
             
-            // 3. 更新本地用户信息与界面
+            // 更新本地状态和界面
             currentUser.credits = newCredits;
             document.getElementById('creditsLeft').innerText = newCredits;
             document.getElementById('creditsLeftInner').innerText = newCredits;
-            toolMsgDiv.innerHTML = `✅ 使用成功！消耗1积分，剩余 ${newCredits} 积分。`;
+            toolMsgDiv.innerHTML = `✅ 使用成功！消耗1积分，剩余 ${newCredits} 积分。正在打开排版神器...`;
             toolMsgDiv.classList.add('success-msg');
             toolMsgDiv.classList.remove('error-msg', 'warning-msg');
             
-            // 如果积分变为0，友善提醒并退出
+            // 🎯 核心功能：扣分成功后打开排版神器 HTML
+            window.open('阅读讲解单制作排版神器.html', '_blank');
+            
             if (newCredits <= 0) {
                 toolMsgDiv.innerHTML += '<br>💡 积分已用完，将自动退出登录。';
                 setTimeout(() => logout(), 2500);
@@ -438,7 +383,6 @@
             console.error('[useTool 异常]', err);
             toolMsgDiv.innerHTML = `⚠️ 工具使用异常: ${err.message || '请刷新页面或检查网络'}<br>未消耗积分，请稍后重试。`;
             toolMsgDiv.classList.add('error-msg');
-            toolMsgDiv.classList.remove('success-msg', 'warning-msg');
         } finally {
             if (useBtn) {
                 useBtn.disabled = false;
@@ -447,99 +391,64 @@
         }
     }
     
-    // 退出登录（重置所有状态）
+    // 退出登录
     function logout() {
-        const wasLoggedIn = !!currentUser;
         currentUser = null;
-        // 重置登录区显示
-        const loginDiv = document.getElementById('loginArea');
-        const toolDiv = document.getElementById('toolArea');
-        if (loginDiv) loginDiv.style.display = 'block';
-        if (toolDiv) toolDiv.style.display = 'none';
-        
-        // 清空输入框 （保留上次填写但建议清空密码）
-        const usernameInput = document.getElementById('username');
-        const passwordInput = document.getElementById('password');
-        if (usernameInput) usernameInput.value = '';
-        if (passwordInput) passwordInput.value = '';
-        
-        // 重置登录区消息为正常状态
+        document.getElementById('loginArea').style.display = 'block';
+        document.getElementById('toolArea').style.display = 'none';
+        document.getElementById('username').value = '';
+        document.getElementById('password').value = '';
         const msgDiv = document.getElementById('message');
         if (msgDiv) {
             msgDiv.innerHTML = '✨ 已退出登录，可重新输入账号密码。';
             msgDiv.classList.remove('error-msg', 'warning-msg', 'success-msg');
             msgDiv.classList.add('warning-msg');
         }
-        
-        // 重置工具区消息
         const toolMsg = document.getElementById('toolMsg');
         if (toolMsg) {
             toolMsg.innerHTML = '🚪 已退出，如需使用请重新登录。';
             toolMsg.classList.add('warning-msg');
-            toolMsg.classList.remove('success-msg', 'error-msg');
         }
-        
-        // 如果之前因积分不足登出，同时释放按钮禁用状态
+        // 恢复按钮状态
         const loginBtn = document.getElementById('loginBtn');
-        if (loginBtn) {
-            loginBtn.disabled = false;
-            loginBtn.innerText = '登录系统';
-        }
+        if (loginBtn) loginBtn.disabled = false;
         const useBtn = document.querySelector('.tool-btn');
-        if (useBtn) {
-            useBtn.disabled = false;
-            useBtn.innerText = '使用一次工具（消耗1积分）';
-        }
+        if (useBtn) useBtn.disabled = false;
     }
 
-    // ---------- 页面启动时检测 Supabase 连接状态（不阻塞，但主动预检并给出友好提示）----------
+    // 页面启动预检连通性
     async function preflightConnection() {
         try {
             const supabase = getSupabase();
             if (!supabase) throw new Error('客户端未就绪');
-            // 做一次轻量级心跳测试：查询 users 表限制1条（只是为了测试连接性与权限，不关心数据）
-            // 注意：如果表完全没数据或RLS禁止，则可能报权限/表不存在错误，正好能提前反馈给用户
             const { error } = await supabase
                 .from('users')
                 .select('id', { count: 'exact', head: true })
                 .limit(1);
             if (error) {
-                // 如果是表不存在: relation "users" does not exist，给清晰提示，但不影响后续登录尝试（但登录时会再次报错）
-                if (error.message && error.message.includes('relation') && error.message.includes('does not exist')) {
-                    displayStartupWarning('⚠️ 数据库表 "users" 未找到，请在Supabase中创建users表 (id, username, password, credits)。登录将失败。');
-                } else if (error.message && error.message.includes('permission')) {
-                    displayStartupWarning('🔐 警告: 无法访问 users 表，可能缺少RLS策略。登录可能失败请检查权限。');
-                } else if (error.message && error.message.includes('Failed to fetch')) {
-                    displayStartupWarning('🌐 预检连接失败: 无法访问Supabase后端，请检查网络或防火墙设置。登录将无响应，请排查连接。');
-                } else if (error.message) {
-                    console.warn('[预检非致命错误]', error.message);
-                    // 不强制阻断，只是提醒
-                    const msgDiv = document.getElementById('message');
-                    if (msgDiv && !msgDiv.innerHTML.includes('初始化失败')) {
-                        msgDiv.innerHTML = `⚡ Supabase连接警告: ${error.message.substring(0, 100)}<br>登录可能受影响，请联系管理员。`;
-                        msgDiv.classList.add('warning-msg');
-                    }
+                if (error.message.includes('relation') && error.message.includes('does not exist')) {
+                    displayStartupWarning('⚠️ 数据库表 "users" 未找到，请在Supabase中创建users表。');
+                } else if (error.message.includes('permission')) {
+                    displayStartupWarning('🔐 警告: 无法访问 users 表，可能缺少RLS策略。登录可能失败。');
+                } else if (error.message.includes('Failed to fetch')) {
+                    displayStartupWarning('🌐 预检连接失败: 无法访问Supabase后端，请检查网络。');
                 }
             } else {
-                console.log('[预检] Supabase users 表可访问，连接正常');
+                console.log('[预检] 连接正常');
                 const msgDiv = document.getElementById('message');
-                if (msgDiv && !msgDiv.innerHTML.includes('失败') && !msgDiv.innerHTML.includes('错误') && document.getElementById('loginArea').style.display !== 'none') {
+                if (msgDiv && !msgDiv.innerHTML.includes('失败')) {
                     msgDiv.innerHTML = '✅ 数据库连接正常，请输入账号密码登录。';
-                    msgDiv.classList.remove('error-msg');
                     msgDiv.classList.add('success-msg');
-                    // 3秒后恢复普通提示
                     setTimeout(() => {
                         if (msgDiv && msgDiv.innerHTML.includes('数据库连接正常')) {
                             msgDiv.innerHTML = '✨ 输入账号密码，使用积分工具';
-                            msgDiv.classList.remove('success-msg', 'error-msg');
-                            msgDiv.classList.add('warning-msg');
+                            msgDiv.classList.remove('success-msg');
                         }
                     }, 4000);
                 }
             }
         } catch (preErr) {
             console.error('[预检异常]', preErr);
-            displayStartupWarning('⚠️ 初始化连接检测异常: ' + (preErr.message || '未知错误'));
         }
     }
     
@@ -548,45 +457,26 @@
         if (msgDiv && document.getElementById('loginArea').style.display !== 'none') {
             msgDiv.innerHTML = msg;
             msgDiv.classList.add('error-msg');
-            msgDiv.classList.remove('success-msg', 'warning-msg');
-        } else if (msgDiv) {
-            msgDiv.innerHTML = msg;
-            msgDiv.classList.add('error-msg');
         }
-        console.warn('[启动警告]', msg);
     }
-    
-    // 页面完全加载后执行预判 & 确保全局函数可用
+
+    // 页面加载完成
     window.addEventListener('DOMContentLoaded', () => {
-        // 尝试初始化但不阻塞UI
         try {
-            if (typeof supabase !== 'undefined' && supabase.createClient) {
-                supabaseClient = initSupabaseClient();
-                preflightConnection();   // 后台检查连接，提升用户体验
-            } else {
-                const msgDiv = document.getElementById('message');
-                if (msgDiv) {
-                    msgDiv.innerHTML = '❌ Supabase SDK 加载失败，请检查网络后刷新页面。';
-                    msgDiv.classList.add('error-msg');
-                }
-            }
+            supabaseClient = initSupabaseClient();
+            preflightConnection();
         } catch (e) {
             console.error(e);
-            const msgDiv = document.getElementById('message');
-            if (msgDiv) msgDiv.innerHTML = `💀 初始化错误: ${e.message}`;
         }
-        
-        // 增加键盘支持: 回车登录
+        // 回车登录
         const pwdInput = document.getElementById('password');
         const userInput = document.getElementById('username');
-        const loginHandler = (e) => {
-            if (e.key === 'Enter') login();
-        };
+        const loginHandler = (e) => { if (e.key === 'Enter') login(); };
         if (pwdInput) pwdInput.addEventListener('keypress', loginHandler);
         if (userInput) userInput.addEventListener('keypress', loginHandler);
     });
-    
-    // 暴露全局函数 (防止onclick作用域问题)
+
+    // 全局函数暴露
     window.login = login;
     window.useTool = useTool;
     window.logout = logout;
