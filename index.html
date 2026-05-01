@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>积分工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div id="loginArea">
+        <h2>登录（输入我给你分配的账号密码）</h2>
+        账号：<input id="username" type="text"><br>
+        密码：<input id="password" type="password"><br>
+        <button onclick="login()">登录</button>
+        <p id="message"></p >
+    </div>
+
+    <div id="toolArea" style="display:none;">
+        <h2>欢迎 <span id="displayUser"></span>，剩余积分：<span id="creditsLeft">0</span></h2>
+        <button onclick="useTool()">使用一次工具（消耗1积分）</button>
+        <p id="toolMsg"></p >
+        <button onclick="logout()">退出登录</button>
+    </div>
+
+    <script>
+        // ！！！请替换成你自己的 Supabase 实际信息！！！
+        const SUPABASE_URL = 'https://dmiylurcdvqlhadjwqqp.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRtaXlsdXJjZHZxbGhhZGp3cXFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2MTQ4NTksImV4cCI6MjA5MzE5MDg1OX0.7IiJhHGIK7UdgXA4_NHLRY78PC2JiSuMR_KNNqvyjm4';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentUser = null;
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            const { data, error } = await supabase
+                .from('users')
+                .select('*')
+                .eq('username', username)
+                .eq('password', password)
+                .single();
+
+            if (error || !data) {
+                document.getElementById('message').innerText = '账号或密码错误';
+                return;
+            }
+
+            if (data.credits <= 0) {
+                document.getElementById('message').innerText = '您的积分已用完，请联系管理员充值';
+                return;
+            }
+
+            currentUser = data;
+            document.getElementById('displayUser').innerText = currentUser.username;
+            document.getElementById('creditsLeft').innerText = currentUser.credits;
+            document.getElementById('loginArea').style.display = 'none';
+            document.getElementById('toolArea').style.display = 'block';
+            document.getElementById('message').innerText = '';
+        }
+
+        async function useTool() {
+            if (!currentUser) return;
+
+            const { data: freshUser, error } = await supabase
+                .from('users')
+                .select('credits')
+                .eq('id', currentUser.id)
+                .single();
+
+            if (error || freshUser.credits <= 0) {
+                document.getElementById('toolMsg').innerText = '积分不足，请联系管理员充值';
+                logout();
+                return;
+            }
+
+            const newCredits = freshUser.credits - 1;
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({ credits: newCredits })
+                .eq('id', currentUser.id);
+
+            if (updateError) {
+                document.getElementById('toolMsg').innerText = '操作失败，请重试';
+                return;
+            }
+
+            currentUser.credits = newCredits;
+            document.getElementById('creditsLeft').innerText = newCredits;
+            document.getElementById('toolMsg').innerText = '使用成功！消耗1积分。';
+
+            if (newCredits <= 0) {
+                document.getElementById('toolMsg').innerText += ' 积分已用完，请退出登录后联系管理员。';
+                setTimeout(() => logout(), 2000);
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('loginArea').style.display = 'block';
+            document.getElementById('toolArea').style.display = 'none';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('toolMsg').innerText = '';
+        }
+    </script>
+</body>
+</html>
