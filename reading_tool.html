@@ -2,363 +2,258 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Careful Reading - 精准溯源排版系统</title>
+    <title>Careful Reading - A4纵向精准导出版</title>
     <style>
-        /* ================= 基础与控制面板 ================= */
+        /* ================= 核心变量与纸张定义 ================= */
         :root {
             --text-main: #222222;
             --signpost-red: #c62828; 
             --bg-paper: #fcfcf9; 
+            --a4-width: 210mm; /* A4 纵向宽度 */
         }
+
+        /* ================= 打印控制 (解决PDF乱码与掉色) ================= */
+        @media print {
+            body { background: none !important; padding: 0 !important; margin: 0 !important; }
+            .control-panel { display: none !important; }
+            .preview-container { 
+                box-shadow: none !important; 
+                width: var(--a4-width) !important; 
+                margin: 0 !important; 
+                padding: 10mm 12mm !important; /* 打印边距 */
+            }
+            * { 
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important; 
+                color-adjust: exact !important;
+            }
+            @page { 
+                size: A4 portrait; 
+                margin: 0; /* 由容器padding控制 */
+            }
+            .paragraph-row, .vocab-card, .question-item { 
+                page-break-inside: avoid !important; /* 防止内容被切断 */
+            }
+        }
+
+        /* ================= 基础样式 ================= */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef0f4; margin: 0; padding: 20px; }
-        .control-panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .control-panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 20px; max-width: var(--a4-width); margin-left: auto; margin-right: auto; }
         .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        textarea { width: 100%; height: 160px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; resize: vertical; box-sizing: border-box; font-family: monospace;}
-        select { padding: 8px; font-size: 14px; border-radius: 4px; border: 1px solid #ccc; margin-right: 10px; font-weight: bold; color: #333; }
+        textarea { width: 100%; height: 140px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; resize: vertical; box-sizing: border-box; font-family: monospace;}
         button { background: #333; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: 0.2s;}
         button:hover { background: #555; }
         .btn-green { background: #4a7c59; }
-        .btn-green:hover { background: #386044; }
-        .header-controls { display: flex; align-items: center; margin-bottom: 15px; gap: 15px; background: #f9f9f9; padding: 10px; border-radius: 6px;}
 
-        /* ================= 页面主容器 ================= */
+        /* ================= A4 预览容器 ================= */
         .preview-container {
             background: var(--bg-paper); 
-            width: 297mm; 
-            min-height: 210mm; 
+            width: var(--a4-width); 
+            min-height: 297mm; /* A4 纵向高度 */
             margin: 0 auto;
-            padding: 15mm 18mm;
+            padding: 15mm 15mm;
             box-sizing: border-box;
             box-shadow: 0 0 15px rgba(0,0,0,0.15);
+            position: relative;
         }
 
-        /* ----- 顶部 Header ----- */
-        .page-header { border-bottom: 2px solid #ccc; padding-bottom: 12px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end;}
-        .main-title { font-size: 38px; font-family: 'Arial Black', Impact, sans-serif; color: #222; text-transform: uppercase; letter-spacing: 1px; line-height: 1;}
-        .sub-title { font-size: 15px; font-weight: bold; color: #888; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 1px;}
-        .main-title span { color: #777; }
+        /* ----- 头部 ----- */
+        .page-header { border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end;}
+        .main-title { font-size: 32px; font-family: 'Arial Black', sans-serif; color: #222; text-transform: uppercase; line-height: 1;}
+        .main-title span { color: #888; }
+        .sub-title { font-size: 12px; font-weight: bold; color: #666; text-transform: uppercase; letter-spacing: 1px;}
 
-        /* ================= 行列对齐布局 ================= */
+        /* ================= 纵向两栏布局优化 ================= */
         .main-layout {
             display: grid;
-            grid-template-columns: 1fr 280px; 
-            gap: 30px;
+            grid-template-columns: 1fr 190px; /* 纵向模式下缩小词汇栏宽度 */
+            gap: 20px;
             align-items: start;
         }
 
-        .article-section { display: flex; flex-direction: column; gap: 30px; }
-        .paragraph-row { display: grid; grid-template-columns: 130px 1fr; gap: 20px; align-items: start; }
+        .article-section { display: flex; flex-direction: column; gap: 25px; }
+        
+        /* 段落行布局 */
+        .paragraph-row { display: grid; grid-template-columns: 90px 1fr; gap: 15px; align-items: start; margin-bottom: 5px;}
 
-        /* ----- 左侧引路栏 ----- */
+        /* 引路栏 */
         .guide-box {
-            font-size: 13.5px; color: #555; line-height: 1.6; padding-right: 15px; 
-            border-right: 3px solid #ccc; text-align: right; position: relative; font-weight: 600;
-            height: 100%;
+            font-size: 12px; color: #555; line-height: 1.5; padding-right: 12px; 
+            border-right: 2px solid #ddd; text-align: right; font-weight: 600;
         }
-        .guide-title { font-weight: 900; color: #888; font-size: 11px; margin-bottom: 6px; letter-spacing: 0.5px; text-transform: uppercase;}
+        .guide-title { font-weight: 900; color: #999; font-size: 10px; margin-bottom: 4px; text-transform: uppercase;}
 
-        /* ----- 中间课文区 ----- */
-        .para-block { display: flex; align-items: flex-start; gap: 10px; }
-        .para-num { font-family: 'Arial Black', sans-serif; font-size: 18px; color: #777; line-height: 1.2; margin-top: 4px; flex-shrink: 0;}
-        .para-text { flex: 1; font-family: 'Times New Roman', Georgia, serif; font-size: 17.5px; line-height: 2.2; color: var(--text-main); text-align: justify;}
+        /* 正文区 */
+        .para-block { display: flex; align-items: flex-start; gap: 8px; }
+        .para-num { font-family: 'Arial Black', sans-serif; font-size: 16px; color: #999; margin-top: 4px; flex-shrink: 0;}
+        .para-text { flex: 1; font-family: 'Times New Roman', serif; font-size: 16px; line-height: 1.8; color: var(--text-main); text-align: justify;}
 
-        /* 高亮：路标词 */
-        .signpost-word { color: var(--signpost-red); font-weight: 900; font-size: 1.15em; font-family: Arial, sans-serif; margin: 0 2px;}
+        /* 强调标记 */
+        .signpost-word { color: var(--signpost-red); font-weight: 900; font-size: 1.1em; }
+        .vocab-hl { padding: 1px 3px; font-weight: bold; border-radius: 2px; }
+        .evidence-line { border-bottom: 1.5px dashed #777; padding-bottom: 1px; }
+        .evidence-tag { font-family: Arial; font-size: 9px; font-weight: bold; color: #666; vertical-align: super; background: #eee; padding: 0 2px; }
 
-        /* 高亮：精读词组 */
-        .vocab-hl { padding: 1px 4px; font-weight: bold; margin: 0 2px; font-family: Arial, sans-serif;}
-
-        /* 出处划线 (优化标签显示) */
-        .evidence-line { border-bottom: 1.5px dashed #666; position: relative; padding-bottom: 2px; }
-        .evidence-tag { font-family: Arial, sans-serif; font-size: 10px; font-weight: bold; color: #555; vertical-align: super; margin-left: 2px; background: rgba(0,0,0,0.05); padding: 0 3px; border-radius: 2px;}
-
-        /* ----- 右侧栏：词汇区 ----- */
+        /* ================= 右侧词汇无缝块 (纵向优化) ================= */
         .right-vocab-area { 
-            display: flex; flex-direction: column; gap: 0; 
-            font-family: Arial, Helvetica, sans-serif; 
+            display: flex; flex-direction: column; 
+            border: 1px solid rgba(0,0,0,0.1);
             border-radius: 4px; overflow: hidden;
-            border: 1px solid rgba(0,0,0,0.08);
         }
-        
-        .vocab-card { 
-            page-break-inside: avoid; padding: 15px 16px; border-radius: 0; 
-            border-bottom: 1px solid rgba(255,255,255,0.4); 
-        }
+        .vocab-card { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.3); }
         .vocab-card:last-child { border-bottom: none; }
-
-        .vocab-head { font-weight: 900; font-size: 16px; display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;}
-        .vocab-phonetic { font-size: 12px; font-weight: normal; opacity: 0.85; font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;}
-        .vocab-body { font-size: 13.5px; line-height: 1.6; color: #222; }
-        .vocab-meaning { font-weight: bold; margin-bottom: 6px; }
-        
-        .vocab-example-en { font-style: italic; margin-top: 6px; font-size: 13.5px;}
-        .vocab-example-cn { font-size: 12px; margin-bottom: 6px; opacity: 0.85;}
-
-        .vocab-expansion { font-size: 12.5px; margin-top: 8px; border-top: 1px solid rgba(0,0,0,0.1); padding-top: 8px;}
-        .expand-label { font-weight: bold; }
+        .vocab-head { font-weight: 900; font-size: 14px; margin-bottom: 4px; display: flex; flex-direction: column; }
+        .vocab-phonetic { font-size: 11px; font-weight: normal; opacity: 0.8; margin-top: 2px;}
+        .vocab-body { font-size: 12.5px; line-height: 1.5; }
+        .vocab-meaning { font-weight: bold; margin-bottom: 4px; display: block; }
+        .vocab-example-en { font-style: italic; margin-top: 4px; font-size: 12px; opacity: 0.9; }
+        .vocab-example-cn { font-size: 11px; opacity: 0.8; margin-bottom: 4px;}
+        .vocab-expansion { font-size: 11.5px; margin-top: 6px; border-top: 1px solid rgba(0,0,0,0.08); padding-top: 6px;}
 
         /* 题目区 */
-        .questions-section { border-top: 3px solid #eee; padding-top: 20px; margin-top: 30px; grid-column: 1 / -1; }
-        .q-header { font-family: 'Arial Black', sans-serif; font-size: 15px; color: #555; margin-bottom: 15px; text-transform: uppercase;}
-        .question-item { margin-bottom: 15px; font-family: Arial, sans-serif; font-size: 14.5px; line-height: 1.6;}
-        .question-stem { font-weight: bold; margin-bottom: 6px; }
-        .q-option { margin-left: 10px; margin-bottom: 4px; }
-        .opt-letter { font-weight: bold; margin-right: 6px; }
-
-        @media print {
-            body { background: white; padding: 0; margin: 0; }
-            .control-panel { display: none !important; }
-            .preview-container { box-shadow: none; width: 100%; padding: 0; margin: 0; }
-            .para-block { page-break-inside: avoid; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            @page { size: A4 landscape; margin: 12mm; } 
-        }
+        .questions-section { border-top: 2px solid #444; padding-top: 15px; margin-top: 25px; grid-column: 1 / -1; }
+        .q-header { font-family: 'Arial Black', sans-serif; font-size: 14px; margin-bottom: 12px; text-transform: uppercase;}
+        .question-item { margin-bottom: 12px; font-family: Arial, sans-serif; font-size: 13.5px; }
+        .question-stem { font-weight: bold; margin-bottom: 5px; }
+        .q-option { margin-left: 10px; margin-bottom: 3px; }
     </style>
 </head>
 <body>
 
     <div class="control-panel">
-        <h2 style="margin-top:0; color:#333;">📖 Careful Reading (精准溯源版)</h2>
-        
-        <div class="header-controls">
-            <label><strong>🎯 目标考试：</strong></label>
-            <select id="examLevel">
-                <option value="中考">中考</option>
-                <option value="高考" selected>高考</option>
-                <option value="四六级">四六级</option>
-                <option value="考研">考研</option>
-            </select>
-        </div>
-
+        <h3 style="margin-top:0;">📄 A4纵向排版系统 (导出不乱码版)</h3>
         <div class="grid-2col">
             <div>
-                <label><strong>1. 粘贴【英文原文 + 题目】:</strong></label><br>
-                <textarea id="rawText" placeholder="在此粘贴..."></textarea>
-                <button onclick="generatePrompt()">⬇️ 生成强效提示词</button>
+                <label>1. 原文与题目</label>
+                <textarea id="rawText" placeholder="粘贴原文..."></textarea>
+                <button onclick="generatePrompt()">生成提示词</button>
             </div>
             <div>
-                <label><strong>2. 发给豆包的提示词 (已加强溯源指令):</strong></label><br>
-                <textarea id="promptArea" readonly style="background:#f9f9f9; border-color:#888;"></textarea>
-                <button onclick="copyPrompt()">📄 复制发给豆包</button>
+                <label>2. 复制提示词到豆包</label>
+                <textarea id="promptArea" readonly></textarea>
+                <button onclick="copyPrompt()">复制</button>
             </div>
         </div>
-
-        <hr style="margin:15px 0; border:0; border-top:1px solid #ddd;">
-
-        <div>
-            <label><strong>3. 粘贴 AI 生成的 JSON 数据:</strong></label><br>
-            <textarea id="jsonInput" style="height:100px;"></textarea>
-            <div style="margin-top:10px;">
-                <button class="btn-green" onclick="renderLayout()">✨ 渲染排版</button>
-                <button onclick="window.print()" style="background:#c62828;">🖨️ 导出 PDF</button>
-            </div>
+        <div style="margin-top:15px;">
+            <label>3. 粘贴 JSON 结果</label>
+            <textarea id="jsonInput" style="height:80px;"></textarea>
+            <button class="btn-green" onclick="renderLayout()">✨ 渲染排版</button>
+            <button onclick="window.print()" style="background:#c62828;">🖨️ 导出 PDF</button>
         </div>
     </div>
 
     <div class="preview-container" id="previewArea">
         <div class="page-header">
-            <div class="main-title">CAREFUL <span>READING</span></div>
-            <div class="sub-title">Intensive Study Guide</div>
+            <div class="main-title">READING <span>EXPLORER</span></div>
+            <div class="sub-title">Intensive Study | Portrait A4</div>
         </div>
 
         <div class="main-layout">
             <div class="article-section" id="articleContent">
-                <div class="paragraph-row">
-                    <div class="guide-box"><div class="guide-title">PARAGRAPH ①</div>等待数据...</div>
-                    <div class="para-block">
-                        <div class="para-num">①</div>
-                        <div class="para-text">文段加载中...</div>
-                    </div>
                 </div>
-            </div>
-
             <div class="right-vocab-area" id="vocabContent">
-                <div style="padding:15px; text-align:center; color:#888;">词汇板块加载中...</div>
-            </div>
-            
-            <div class="questions-section">
-                <div class="q-header">Comprehension Check</div>
-                <div id="questionsContent">题目加载中...</div>
-            </div>
+                </div>
+        </div>
+
+        <div class="questions-section">
+            <div class="q-header">Comprehension & Analysis</div>
+            <div id="questionsContent"></div>
         </div>
     </div>
 
     <script>
         const themes = [
-            { bg: '#d4ded6', head: '#2a4b32', text: '#222' }, 
-            { bg: '#e8dbd1', head: '#6b3c1a', text: '#222' }, 
-            { bg: '#d3dae0', head: '#2d445c', text: '#222' }, 
-            { bg: '#e0d1d6', head: '#6a2a43', text: '#222' }, 
-            { bg: '#e0dfcc', head: '#57553b', text: '#222' }  
+            { bg: '#eef2ef', head: '#2a4b32' }, // 灰绿
+            { bg: '#f5efea', head: '#6b3c1a' }, // 奶茶
+            { bg: '#edf1f5', head: '#2d445c' }, // 灰蓝
+            { bg: '#f5f0f2', head: '#6a2a43' }, // 藕粉
+            { bg: '#f4f4e8', head: '#57553b' }  // 浅卡其
         ];
 
         function generatePrompt() {
             const rawText = document.getElementById('rawText').value.trim();
-            const examLevel = document.getElementById('examLevel').value;
-            if (!rawText) { alert("请先输入原文和题目！"); return; }
+            const prompt = `你是一位英语教研专家。请分析以下原文和题目，按JSON输出。
 
-            const prompt = `你是一位严谨的英语教研专家。请分析我提供的原文及题目，紧扣【${examLevel}】考纲，进行分析并严格按JSON格式输出。
+# 规则：
+1. 每一段提取2个路标词。左侧提问(structure_q)严禁出现英文原词。原文标记：【路标:word】。
+2. 精读词组(vocabulary)：全文严格限制在4-6个最重要考点，每段不超过2个。原文标记：【词组ID:phrase】。不要给中文。
+3. 题目溯源：精准找到原句，标记：【Q1-A开始】原句【Q1-A结束】。必须一字不差。
+4. 原文text中绝对不允许出现任何中文。
 
-# 核心任务与冲突解决规则（最高优先级）：
-1. **路标词**：每段必须且只能提取 2 个路标词。左侧提问(structure_q)绝不能写出英文原词。课文打标：\`【路标:英文原词】\`。
-2. **段落标号**：必须使用圆圈序号：①, ②, ③...
-3. **右侧精读词组**：每段最多提取1-2个，全文总计4-6个，宁缺毋滥。
-4. **【极度严谨：题目出处精准溯源】**：
-   - 你必须像法官一样，在原文中找到**直接决定**该题目/选项对错的【靶向原句】。
-   - 如果对应特定选项，打标格式：\`【Q1-A开始】一字不差的英文原句【Q1-A结束】\`。
-   - 如果对应整道题（如主旨题），打标格式：\`【Q1开始】一字不差的英文原句【Q1结束】\`。
-   - **绝对禁止篡改、缩写、翻译或概括原文！** 被 \`【开始】\` 和 \`【结束】\` 包裹的文字，必须在原文中能进行完美的字符串匹配。
-
-# JSON结构模板：
+# 结构：
 {
-  "content_blocks": [
-    {
-      "para_num": "①",
-      "structure_q": "天文学家对该物体的初步观察结果展现出了怎样的反差感？",
-      "text": "In October 2017, astronomers saw 【词组1:something surprising】. 【路标:However】, it was long. 【Q1-B开始】This was an interstellar object.【Q1-B结束】"
-    }
-  ],
-  "questions": [
-    { "q_num": 1, "question": "...", "options": ["A. ...", "B. ..."] }
-  ],
-  "vocabulary": [
-    {
-      "id": 1,
-      "phrase": "something surprising",
-      "phonetic": "[sʌmθɪŋ səˈpraɪzɪŋ]",
-      "meaning": "令人惊讶的事物",
-      "example_en": "They discovered something surprising.",
-      "example_cn": "他们发现了一些令人惊讶的东西。",
-      "expansion": "派生词: surprise v. 使惊讶"
-    }
-  ]
+  "content_blocks": [{"para_num":"①","structure_q":"提问","text":"内容"}],
+  "vocabulary": [{"id":1,"phrase":"词组","phonetic":"音标","meaning":"释义","example_en":"例句","example_cn":"翻译","expansion":"拓展"}],
+  "questions": [{"q_num":1,"question":"题干","options":["A.xx"]}]
 }
 
-待处理文本：
+待处理内容：
 ${rawText}`;
-
             document.getElementById('promptArea').value = prompt;
         }
 
         function copyPrompt() {
-            const promptArea = document.getElementById('promptArea');
-            if(!promptArea.value) return;
-            promptArea.select();
+            document.getElementById('promptArea').select();
             document.execCommand('copy');
-            alert("提示词已复制！【法官级精准溯源指令】已生效，请发给大模型。");
+            alert("提示词已复制！");
         }
 
         function renderLayout() {
             const jsonStr = document.getElementById('jsonInput').value.trim();
-            if (!jsonStr) { alert("请粘贴 JSON 数据！"); return; }
-
             let data;
             try {
-                let cleanJsonStr = jsonStr.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
-                data = JSON.parse(cleanJsonStr);
-            } catch (e) {
-                alert("JSON 解析错误。\n" + e.message); return;
-            }
+                data = JSON.parse(jsonStr.replace(/```json|```/gi, '').trim());
+            } catch (e) { alert("JSON解析失败"); return; }
 
-            let activeThemes = {};
-
+            let themeMap = {};
             let vocabHTML = '';
-            if (data.vocabulary && Array.isArray(data.vocabulary)) {
-                data.vocabulary.forEach((v, index) => {
-                    const theme = themes[index % themes.length];
-                    activeThemes[v.id] = theme; 
-
-                    let expText = v.expansion ? v.expansion.replace(/([^\|:：]+)[:：]/g, '<span class="expand-label">$1:</span>') : '';
-                    let phoneticText = v.phonetic ? `<span class="vocab-phonetic">${v.phonetic}</span>` : '';
-                    
-                    let exampleHTML = '';
-                    if (v.example_en && v.example_cn) {
-                        exampleHTML = `
-                            <div class="vocab-example-en" style="color: ${theme.head};">${v.example_en}</div>
-                            <div class="vocab-example-cn">${v.example_cn}</div>
-                        `;
-                    }
-
-                    vocabHTML += `
-                    <div class="vocab-card" style="background-color: ${theme.bg}; color: ${theme.text};">
-                        <div class="vocab-head" style="color: ${theme.head};">
-                            <span>${v.phrase}</span>
-                            ${phoneticText}
-                        </div>
-                        <div class="vocab-body">
-                            <div class="vocab-meaning" style="color: ${theme.head};">${v.meaning}</div>
-                            ${exampleHTML}
-                            ${expText ? `<div class="vocab-expansion">${expText}</div>` : ''}
-                        </div>
-                    </div>`;
-                });
-            }
+            data.vocabulary.forEach((v, i) => {
+                const theme = themes[i % themes.length];
+                themeMap[v.id] = theme;
+                vocabHTML += `
+                <div class="vocab-card" style="background:${theme.bg};">
+                    <div class="vocab-head" style="color:${theme.head};">${v.phrase} <span class="vocab-phonetic">${v.phonetic}</span></div>
+                    <div class="vocab-body">
+                        <span class="vocab-meaning" style="color:${theme.head}">${v.meaning}</span>
+                        <div class="vocab-example-en">${v.example_en}</div>
+                        <div class="vocab-example-cn">${v.example_cn}</div>
+                        ${v.expansion ? `<div class="vocab-expansion">${v.expansion}</div>` : ''}
+                    </div>
+                </div>`;
+            });
             document.getElementById('vocabContent').innerHTML = vocabHTML;
 
             let articleHTML = '';
-            
-            if (data.content_blocks && Array.isArray(data.content_blocks)) {
-                data.content_blocks.forEach((block) => {
-                    let pText = block.text;
-
-                    // 解析路标
-                    pText = pText.replace(/【路标:(.*?)\((.*?)\)】/gi, '<span class="signpost-word">$1</span>');
-                    pText = pText.replace(/【路标:(.*?)】/gi, '<span class="signpost-word">$1</span>'); 
-
-                    // 解析词组
-                    pText = pText.replace(/【词组(\d+):(.*?)\((.*?)\)】/gi, function(match, id, eng) {
-                        const theme = activeThemes[id] || {bg: '#eee', head: '#111'};
-                        return `<span class="vocab-hl" style="background-color: ${theme.bg}; color: ${theme.head};">${eng}</span>`;
-                    });
-                    pText = pText.replace(/【词组(\d+):(.*?)】/gi, function(match, id, eng) {
-                        const theme = activeThemes[id] || {bg: '#eee', head: '#111'};
-                        return `<span class="vocab-hl" style="background-color: ${theme.bg}; color: ${theme.head};">${eng}</span>`;
-                    });
-
-                    // 💥核心优化：更强大的动态正则匹配溯源线💥
-                    // 能够同时完美捕获 【Q1开始】...【Q1结束】 和 【Q2-B开始】...【Q2-B结束】
-                    pText = pText.replace(/【(Q\d+(?:-[A-Za-z])?)开始】(.*?)【\1结束】/gi, function(match, tag, content) {
-                        return `<span class="evidence-line">${content}<span class="evidence-tag">${tag.toUpperCase()}</span></span>`;
-                    });
-
-                    articleHTML += `
-                    <div class="paragraph-row">
-                        <div class="guide-box">
-                            ${block.structure_q ? `<div class="guide-title">PARAGRAPH ${block.para_num}</div>${block.structure_q}` : ''}
-                        </div>
-                        <div class="para-block">
-                            <div class="para-num">${block.para_num}</div>
-                            <div class="para-text">${pText}</div>
-                        </div>
-                    </div>`;
+            data.content_blocks.forEach(block => {
+                let txt = block.text;
+                txt = txt.replace(/【路标:(.*?)】/gi, '<span class="signpost-word">$1</span>');
+                txt = txt.replace(/【词组(\d+):(.*?)】/gi, (m, id, eng) => {
+                    const t = themeMap[id] || {bg:'#eee', head:'#333'};
+                    return `<span class="vocab-hl" style="background:${t.bg}; color:${t.head}">${eng}</span>`;
                 });
-            }
+                txt = txt.replace(/【(Q\d+(?:-[A-Z])?)开始】(.*?)【\1结束】/gi, '<span class="evidence-line">$2<span class="evidence-tag">$1</span></span>');
+
+                articleHTML += `
+                <div class="paragraph-row">
+                    <div class="guide-box">
+                        <div class="guide-title">PARAGRAPH ${block.para_num}</div>
+                        ${block.structure_q}
+                    </div>
+                    <div class="para-block">
+                        <div class="para-num">${block.para_num}</div>
+                        <div class="para-text">${txt}</div>
+                    </div>
+                </div>`;
+            });
             document.getElementById('articleContent').innerHTML = articleHTML;
 
-            let questionsHTML = '';
-            if (data.questions && Array.isArray(data.questions)) {
-                data.questions.forEach((q) => {
-                    let optionsHTML = '';
-                    if(q.options) {
-                        q.options.forEach(opt => {
-                            let match = opt.match(/^([A-Da-d][\.\)]?)\s*(.*)/);
-                            if(match) {
-                                optionsHTML += `<div class="q-option"><span class="opt-letter">${match[1]}</span> ${match[2]}</div>`;
-                            } else {
-                                optionsHTML += `<div class="q-option">${opt}</div>`;
-                            }
-                        });
-                    }
-                    questionsHTML += `
-                    <div class="question-item">
-                        <div class="question-stem">${q.q_num}. ${q.question}</div>
-                        ${optionsHTML}
-                    </div>`;
-                });
-            }
-            document.getElementById('questionsContent').innerHTML = questionsHTML;
-
-            document.getElementById('previewArea').scrollIntoView({behavior: "smooth"});
+            let qHTML = '';
+            data.questions.forEach(q => {
+                qHTML += `<div class="question-item"><div class="question-stem">${q.q_num}. ${q.question}</div>`;
+                q.options.forEach(opt => qHTML += `<div class="q-option">${opt}</div>`);
+                qHTML += `</div>`;
+            });
+            document.getElementById('questionsContent').innerHTML = qHTML;
         }
     </script>
 </body>
